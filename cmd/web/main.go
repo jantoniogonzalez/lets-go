@@ -7,18 +7,22 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jantoniogonzalez/lets-go/internal/models"
 )
 
 type application struct {
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
-	decoder       *form.Decoder
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	decoder        *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -45,12 +49,17 @@ func main() {
 
 	decoder := form.NewDecoder()
 
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	app := &application{
-		errorLog:      errorLog,
-		infoLog:       infolog,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		decoder:       decoder,
+		errorLog:       errorLog,
+		infoLog:        infolog,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		decoder:        decoder,
+		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{
@@ -79,4 +88,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// CONTINUE ON PAGE 194
+// CONTINUE ON PAGE 225

@@ -18,6 +18,13 @@ type snippetCreateForm struct {
 	validator.Validator
 }
 
+type poopForm struct {
+	title   string
+	content string
+	expires int
+	validator.Validator
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	snippets, err := app.snippets.Latest()
@@ -48,8 +55,11 @@ func (app *application) viewSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	flash := app.sessionManager.PopString(r.Context(), "flash")
+
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
+	data.Flash = flash
 	app.render(w, http.StatusOK, "view.tmpl", data)
 }
 
@@ -58,6 +68,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	data.Form = &snippetCreateForm{
 		Expires: 365,
 	}
+
 	app.render(w, http.StatusOK, "create.tmpl", data)
 }
 
@@ -69,6 +80,8 @@ func (app *application) createSnippetPost(w http.ResponseWriter, r *http.Request
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
+	fmt.Printf("The createform stuff is: %v, %v, %v\n", createForm.Title, createForm.Content, createForm.Expires)
 
 	createForm.CheckField(validator.NotEmpty(createForm.Title), "title", "This field cannot be blank")
 	createForm.CheckField(validator.MaxChars(createForm.Title, 100), "title", "This field cannot be more than 100 characters long")
@@ -87,6 +100,8 @@ func (app *application) createSnippetPost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }

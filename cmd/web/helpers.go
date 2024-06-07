@@ -59,7 +59,12 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 		return err
 	}
 
+	var createForm poopForm
+
+	err = app.decoder.Decode(&createForm, r.PostForm)
 	err = app.decoder.Decode(dst, r.PostForm)
+	fmt.Printf("The form info in decoder: %v, %v, %v\n", r.PostForm.Get("title"), r.PostForm.Get("content"), r.PostForm.Get("expires"))
+	fmt.Printf("The dst is %v\n", createForm)
 	if err != nil {
 
 		var invalidDecoderError *form.InvalidDecoderError
