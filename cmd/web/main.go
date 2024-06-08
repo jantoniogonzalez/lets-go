@@ -11,7 +11,7 @@ import (
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/go-playground/form"
+	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jantoniogonzalez/lets-go/internal/models"
 )
@@ -21,7 +21,7 @@ type application struct {
 	infoLog        *log.Logger
 	snippets       *models.SnippetModel
 	templateCache  map[string]*template.Template
-	decoder        *form.Decoder
+	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
 }
 
@@ -47,7 +47,7 @@ func main() {
 		errorLog.Fatal(err)
 	}
 
-	decoder := form.NewDecoder()
+	formDecoder := form.NewDecoder()
 
 	sessionManager := scs.New()
 	sessionManager.Store = mysqlstore.New(db)
@@ -58,7 +58,7 @@ func main() {
 		infoLog:        infolog,
 		snippets:       &models.SnippetModel{DB: db},
 		templateCache:  templateCache,
-		decoder:        decoder,
+		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
 	}
 
@@ -88,4 +88,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// CONTINUE ON PAGE 225
+// CONTINUE ON PAGE 239

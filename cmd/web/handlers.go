@@ -12,17 +12,10 @@ import (
 )
 
 type snippetCreateForm struct {
-	Title   string
-	Content string
-	Expires int
-	validator.Validator
-}
-
-type poopForm struct {
-	title   string
-	content string
-	expires int
-	validator.Validator
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int    `form:"expires"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -73,35 +66,29 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) createSnippetPost(w http.ResponseWriter, r *http.Request) {
-	var createForm snippetCreateForm
-
-	err := app.decodePostForm(r, &createForm)
+	var form snippetCreateForm
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-
-	fmt.Printf("The createform stuff is: %v, %v, %v\n", createForm.Title, createForm.Content, createForm.Expires)
-
-	createForm.CheckField(validator.NotEmpty(createForm.Title), "title", "This field cannot be blank")
-	createForm.CheckField(validator.MaxChars(createForm.Title, 100), "title", "This field cannot be more than 100 characters long")
-	createForm.CheckField(validator.NotEmpty(createForm.Content), "content", "This field cannot be blank")
-	createForm.CheckField(validator.PermittedInt(createForm.Expires, 1, 7, 365), "expires", "This field must equal 1, 7, or 365")
-
-	if !createForm.Valid() {
+	form.CheckField(validator.NotEmpty(form.Title), "title", "This field cannot be blank")
+	form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be more than 100 characters long")
+	form.CheckField(validator.NotEmpty(form.Content), "content", "This field cannot be blank")
+	form.CheckField(validator.PermittedInt(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7 or 365")
+	if !form.Valid() {
 		data := app.newTemplateData(r)
-		data.Form = createForm
+		data.Form = form
 		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
 		return
 	}
-
-	id, err := app.snippets.Insert(createForm.Title, createForm.Content, createForm.Expires)
+	id, err := app.snippets.Insert(form.Title, form.Content, form.Expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-
+	// Use the Put() method to add a string value ("Snippet successfully
+	// created!") and the corresponding key ("flash") to the session data.
 	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
-
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }

@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/go-playground/form"
+	"github.com/go-playground/form/v4"
 )
 
 func (app *application) serverError(w http.ResponseWriter, err error) {
@@ -54,25 +54,25 @@ func (app *application) newTemplateData(r *http.Request) *templateData {
 }
 
 func (app *application) decodePostForm(r *http.Request, dst any) error {
+	// Call ParseForm() on the request, in the same way that we did in our
+	// createSnippetPost handler.
 	err := r.ParseForm()
 	if err != nil {
 		return err
 	}
-
-	var createForm poopForm
-
-	err = app.decoder.Decode(&createForm, r.PostForm)
-	err = app.decoder.Decode(dst, r.PostForm)
-	fmt.Printf("The form info in decoder: %v, %v, %v\n", r.PostForm.Get("title"), r.PostForm.Get("content"), r.PostForm.Get("expires"))
-	fmt.Printf("The dst is %v\n", createForm)
+	// Call Decode() on our decoder instance, passing the target destination as
+	// the first parameter.
+	err = app.formDecoder.Decode(dst, r.PostForm)
 	if err != nil {
-
+		// If we try to use an invalid target destination, the Decode() method
+		// will return an error with the type *form.InvalidDecoderError.We use
+		// errors.As() to check for this and raise a panic rather than returning
+		// the error.
 		var invalidDecoderError *form.InvalidDecoderError
-
 		if errors.As(err, &invalidDecoderError) {
 			panic(err)
 		}
-
+		// For all other errors, we return them as normal.
 		return err
 	}
 	return nil
