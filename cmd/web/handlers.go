@@ -113,20 +113,24 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form.CheckField(validator.NotEmpty(form.Name), "name", "This field cannot be blank")
-	form.CheckfIeld(validator.NotEmpty(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.NotEmpty(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
 	form.CheckField(validator.NotEmpty(form.Password), "password", "This field cannot be blank")
-	form.CheckField(validators.MinChars(form.Password, 8), "password", "This field needs at least 8 characters")
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field needs at least 8 characters")
 
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
 		app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", data)
+		return
 	}
 
-	err = app.users.Insert(form.Name, form.Email, form.Password)
+	fmt.Fprintln(w, "Create a new user...")
 
-	if err != nil {
-	}
+	// err = app.users.Insert(form.Name, form.Email, form.Password)
+
+	// if err != nil {
+	// }
 }
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {

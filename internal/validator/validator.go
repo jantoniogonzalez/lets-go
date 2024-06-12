@@ -1,9 +1,12 @@
 package validator
 
 import (
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
+
+var EmailRX = regexp.MustCompile("/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/")
 
 type Validator struct {
 	FieldErrors map[string]string
@@ -48,4 +51,8 @@ func PermittedInt(value int, permittedValues ...int) bool {
 
 func MinChars(field string, minChar int) bool {
 	return utf8.RuneCountInString(field) > minChar
+}
+
+func Matches(field string, rx *regexp.Regexp) bool {
+	return rx.MatchString(field)
 }
