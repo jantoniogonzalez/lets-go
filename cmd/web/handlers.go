@@ -18,6 +18,13 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+type userSignupForm struct {
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"="`
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	snippets, err := app.snippets.Latest()
@@ -88,4 +95,48 @@ func (app *application) createSnippetPost(w http.ResponseWriter, r *http.Request
 	// created!") and the corresponding key ("flash") to the session data.
 	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
+}
+
+func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	data.Form = userSignupForm{}
+	app.render(w, http.StatusOK, "signup.tmpl", data)
+}
+
+func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	var form userSignupForm
+	err := app.decodePostForm(r, &form)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form.CheckField(validator.NotEmpty(form.Name), "name", "This field cannot be blank")
+	form.CheckfIeld(validator.NotEmpty(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.NotEmpty(form.Password), "password", "This field cannot be blank")
+	form.CheckField(validators.MinChars(form.Password, 8), "password", "This field needs at least 8 characters")
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", data)
+	}
+
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+
+	if err != nil {
+	}
+}
+
+func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
+
 }

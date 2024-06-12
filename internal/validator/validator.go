@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 )
@@ -26,7 +25,6 @@ func (v *Validator) AddFieldError(key, message string) {
 
 func (v *Validator) CheckField(ok bool, key, message string) {
 	if !ok {
-		fmt.Printf("Adding errorrrrr\n")
 		v.AddFieldError(key, message)
 	}
 }
@@ -46,4 +44,8 @@ func PermittedInt(value int, permittedValues ...int) bool {
 		}
 	}
 	return false
+}
+
+func MinChars(field string, minChar int) bool {
+	return utf8.RuneCountInString(field) > minChar
 }
