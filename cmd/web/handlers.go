@@ -71,7 +71,10 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	data.Form = &snippetCreateForm{
 		Expires: 365,
 	}
-
+	if !data.IsAuthenticated {
+		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+		return
+	}
 	app.render(w, http.StatusOK, "create.tmpl", data)
 }
 
