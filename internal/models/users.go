@@ -2,6 +2,8 @@ package models
 
 import (
 	"database/sql"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -22,33 +24,56 @@ type UserModel struct {
 
 func (m *UserModel) Insert(name string, email string, password string) error {
 	hashed_password, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	if err != nil {
+		return err
+	}
+
 	query := `INSERT INTO users (name, email, hashed_password, created)
 	VALUES (?, ?, ?, UTC_TIMESTAMP());`
-	row, err := m.DB.Exec(query, name, email, hashed_password)
+
+	_, err = m.DB.Exec(query, name, email, string(hashed_password))
 	if err != nil {
-		if err.(*mysql.MySQLError).Number == 1062 {
-			return ErrDuplicateEmail
+		var mySQLError *mysql.MySQLError
+		if errors.As(err, &mySQLError) {
+			if mySQLError.Number == 1062 && strings.Contains(mySQLError.Message, "users_uc_email") {
+				return ErrDuplicateEmail
+			}
 		}
+
 		return err
 	}
 	return nil
 }
 
-func (m *UserModel) Authenticate(email string, password string) (int, error) {
+func (m *UserModel) Authenticate(email, password string) (int, error) {
 	query := `SELECT id, name, email, hashed_password from users
 	WHERE email=?`
 
-	row := m.DB.QueryRow(query, email, password)
+	row := m.DB.QueryRow(query, email)
 
 	user := &User{}
 
 	err := row.Scan(&user.Id, &user.Name, &user.Email, &user.Hashed_password)
 	if err != nil {
-		return -1, nil
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+
 	}
 
 	err = bcrypt.CompareHashAndPassword(user.Hashed_password, []byte(password))
-	return 0, nil
+
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+	}
+
+	return int(user.Id), nil
 }
 
 func (m *UserModel) Exists(id int) (bool, error) {
